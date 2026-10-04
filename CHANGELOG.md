@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Upgrade Pi development dependencies to 1.0.2 and refresh the lockfile to use patched `brace-expansion@5.0.12`; host-provided peer dependencies remain unchanged.
 - Cap xAI response bodies at 16 MiB using both Content-Length checks and streamed byte counting; cancel oversized, timed-out or cancelled body reads.
 - Best-effort cleanup of owned `pi-x-search-*` temporary directories older than 24 hours, scheduled at most once per hour during tool execution. Remove new directories if saving their output fails.
 - Serialize output candidate sizes once per truncation round, and write unique temporary files without a shared mutation queue.
