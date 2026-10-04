@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant Caller as Pi Agent / codemode
+    participant Tool as tool.ts + xai.ts
+    participant Auth as Pi modelRegistry
+    participant API as xAI Responses / Grok
+    participant Search as 服务端 X Search
+    participant Out as output.ts
+
+    Caller->>Tool: x_search(query, filters, options)
+    Tool->>Tool: normalizeParams + readConfig
+    Note right of Tool: 参数无效在此结束，不解析凭证、不联网
+    Tool->>Tool: searchContext，启动超时并合并 AbortSignal
+    Tool->>Auth: getProviderAuth("xai")
+    Auth-->>Tool: Pi 解析或刷新后的凭证
+    Note right of Tool: 凭证不可用在此结束，不发搜索请求
+    Tool->>Tool: buildRequest + researchInstructions
+    Tool->>API: POST /v1/responses，Bearer，仅启用 x_search
+    loop 由服务端规划的检索步骤
+        API->>Search: 按需选择关键词、语义、用户或线程操作
+        Search-->>API: 内部搜索证据，不是插件原始帖子列表
+    end
+    API-->>Tool: 回答文本、引用、状态和 usage
+    Tool->>Tool: parseResponse，生成规范化结果
+    Note right of Tool: 认证、网络、JSON 读取可被超时或取消中断
+    Note right of Tool: 失败转为 failureResult，保留已知用量
+    Tool->>Out: prepareOutput，成功或结构化失败对象
+    Out-->>Tool: text / result / preview
+    Tool->>Tool: toPiUsage，实际总价优先
+    Tool-->>Caller: content + structuredContent + details + isError + usage
+    Note over Caller,Tool: 不自动重试，不换付费模型，不切换认证通道

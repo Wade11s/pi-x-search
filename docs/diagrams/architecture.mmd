@@ -1,0 +1,38 @@
+flowchart TB
+    Entry["index.ts<br/>加载时仅注册 x_search"]
+    Caller["Pi 主 Agent / codemode<br/>直接调用或批量调用"]
+
+    subgraph Local["本地输入与策略"]
+      Tool["src/tool.ts<br/>Schema 与执行编排"]
+      Config["src/config.ts<br/>逐字段合并生效配置"]
+      Policy["src/research.ts<br/>统一证据与范围指令"]
+      Network["src/xai.ts · searchX<br/>校验、超时与官方请求"]
+    end
+
+    Auth["Pi modelRegistry<br/>本次 OAuth / API key"]
+    subgraph Provider["xAI 服务端"]
+      API["POST /v1/responses<br/>独立的 Grok 搜索模型"]
+      Search["内置 X Search<br/>服务端规划并检索"]
+      Evidence["Grok 归纳证据<br/>回答、引用、状态与 usage"]
+    end
+
+    subgraph Result["本地结果处理"]
+      Parse["src/xai.ts · parseResponse<br/>解析引用、用量与质量信号"]
+      Contract["src/result.ts<br/>成功与失败结果契约"]
+      Output["src/output.ts<br/>双层预算与完整结果文件"]
+    end
+    Return["src/tool.ts 返回 Pi<br/>JSON 预览 + 对象 + 用量"]
+
+    Entry --> Tool
+    Caller --> Tool
+    Tool --> Config
+    Config --> Network
+    Policy -.->|instructions| Network
+    Network -->|getProviderAuth| Auth
+    Auth -->|凭证用于 Bearer 请求| API
+    API --> Search
+    Search --> Evidence
+    Evidence --> Parse
+    Contract -.->|统一 Schema| Parse
+    Parse --> Output
+    Output --> Return
